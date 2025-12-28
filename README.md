@@ -13,7 +13,7 @@ This is a Retrieval-Augmented Generation (RAG) system designed to answer questio
 - **Robust Error Handling**: Includes full traceback for connection errors and automatic API key sanitization.
 
 ## Live Demo
-**URL**: `https://rag-mini-project.vercel.app` (Replace with your actual URL)
+**URL**: `https://rag-mini-project.vercel.app
 
 ---
 
