@@ -1,0 +1,16 @@
+# Acme Corp Cancellation & Modification Policy
+
+**Policy Version:** 2.0
+
+## 1. Order Cancellation
+You may cancel your order within **1 hour** of placing it without any penalty. After this window, the order begins processing and cannot be cancelled directly.
+
+## 2. How to Cancel
+To cancel, please log in to your account, visit the "My Orders" section, and click the "Cancel Order" button next to your recent order. If the button is not visible, the cancellation window has passed.
+
+## 3. Order Modifications
+We cannot modify the contents of an order (e.g., changing size, color, or quantity) once it has been placed. If you need to make changes, please cancel the order (if within the 1-hour window) and place a new one.
+If the window has passed, you will need to wait for the item to arrive and then follow our Refund Policy to return it.
+
+## 4. Address Changes
+Correction of shipping addresses is possible up until the order is marked as "Shipped". Please contact customer support immediately if you notice an error in your shipping address.

@@ -1,0 +1,10 @@
+openai>=1.55.0
+python-dotenv==1.0.1
+numpy<2.0.0
+regex
+fastapi
+uvicorn
+pydantic
+pypdf
+tiktoken
+python-multipart

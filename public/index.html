@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <div class="status-indicator"></div>
+                Policy Assistant
+            </h1>
+        </header>
+
+        <div class="chat-area" id="chat-area">
+            <div class="message bot">
+                Hello! I can answer questions about the company policies. What would you like to know?
+            </div>
+
+            <div class="typing" id="typing-indicator">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <button id="upload-btn" title="Upload Document"
+                style="padding: 0 12px; margin-right: 8px; background: rgba(59, 130, 246, 0.2);">
+                📎
+            </button>
+            <input type="file" id="file-input" style="display: none;" accept=".txt,.pdf">
+            <input type="text" id="user-input" placeholder="Ask a question..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

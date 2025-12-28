@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+chroma_db/
+.env
+.vscode
+.vercel
+run_demo.ps1
