@@ -87,6 +87,10 @@ print("App started. Skipping auto-ingest to prevent usage limits/timeouts. Pleas
 class QueryRequest(BaseModel):
     query: str
 
+class SearchRequest(BaseModel):
+    query: str
+    mode: str = "rag"  # "rag" or "agentic"
+
 @app.get("/")
 def home():
     return {"message": "RAG Policy Assistant API is running. Use /query to ask questions."}
@@ -159,5 +163,36 @@ def query_endpoint(request: QueryRequest):
     # Retrieve & Generate
     # The RagEngine handles the OpenAI call internally now
     result = get_rag().generate_answer(request.query)
+    
+    return result
+
+@app.post("/search")
+def search_endpoint(request: SearchRequest):
+    """
+    Search endpoint with support for both RAG and Agentic modes.
+    
+    Request body:
+    {
+        "query": "your question here",
+        "mode": "rag" | "agentic"
+    }
+    """
+    # Validate mode
+    if request.mode not in ["rag", "agentic"]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid mode: {request.mode}. Must be 'rag' or 'agentic'"
+        )
+    
+    # Import search controller
+    # Ensure root directory is in path for backend imports
+    root_dir = os.path.join(os.path.dirname(__file__), '..')
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
+    
+    from backend.app.controllers.search_controller import handle_search
+    
+    # Route to appropriate handler
+    result = handle_search(request.query, request.mode, get_rag())
     
     return result

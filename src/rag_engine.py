@@ -163,7 +163,22 @@ class RagEngine:
             )
             answer = response.choices[0].message.content
         except Exception as e:
-            answer = f"Error generating answer: {e}"
+            error_str = str(e)
+            # Check for rate limit errors
+            if "429" in error_str or "RateLimitReached" in error_str or "rate limit" in error_str.lower():
+                wait_time = None
+                # Try to extract wait time from error message
+                import re
+                wait_match = re.search(r'wait (\d+) seconds', error_str, re.IGNORECASE)
+                if wait_match:
+                    wait_seconds = int(wait_match.group(1))
+                    wait_hours = wait_seconds / 3600
+                    wait_time = f"{wait_hours:.1f} hours"
+                answer = f"⚠️ API Rate Limit Exceeded: The GitHub Models API has a free tier limit of 50 requests per 24 hours. " \
+                        f"{f'Please wait {wait_time} before trying again.' if wait_time else 'Please wait approximately 24 hours before trying again.'} " \
+                        f"Alternatively, you can use an OpenAI API key by setting OPENAI_API_KEY in your .env file."
+            else:
+                answer = f"Error generating answer: {error_str}"
             
         return {
             "answer": answer,

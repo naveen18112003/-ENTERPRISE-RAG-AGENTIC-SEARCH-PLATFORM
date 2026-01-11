@@ -1,19 +1,97 @@
-# RAG Policy Assistant for Acme Corp
+# ENTERPRISE RAG + AGENTIC SEARCH PLATFORM
 
 ## Overview
-This is a Retrieval-Augmented Generation (RAG) system designed to answer questions about Acme Corp's policies (Refund, Cancellation, Shipping) accurately and without hallucination. It uses a structured prompting strategy and an **In-Memory Vector Store** to ground answers in truth, optimized for deployment on Vercel's serverless infrastructure.
 
-**Submission for**: AI Engineer Intern – Take-Home Assignment
+An advanced enterprise-grade search platform that combines **Retrieval-Augmented Generation (RAG)** with **Agentic Search** capabilities. This system provides two distinct modes for answering questions about company policies and documents:
+
+1. **Simple RAG Mode**: Direct retrieval and answer generation
+2. **Agentic Search Mode**: True agentic pipeline with intent detection, planning, tool selection, and post-processing
+
+The platform uses an **In-Memory Vector Store** optimized for serverless deployment and provides a professional, modern web interface for document upload and querying.
+
+---
 
 ## Key Features
-- **Serverless Architecture**: Built with `FastAPI` and deployed on Vercel.
-- **In-Memory RAG Engine**: Optimized for stateless environments (no heavy ChromaDB/Pinecone dependency).
-- **GitHub Models Integration**: Uses Azure-backed usage of GPT-4o via the standard `openai` Python SDK.
-- **Frontend UI**: Simple chat interface with file upload capabilities.
-- **Robust Error Handling**: Includes full traceback for connection errors and automatic API key sanitization.
 
-## Live Demo
-**URL**: `https://rag-mini-project.vercel.app
+### 🚀 Dual Search Modes
+- **Simple RAG Mode**: Fast, direct retrieval and answer generation
+- **Agentic Search Mode**: Intelligent orchestration with:
+  - Intent detection (lookup, compare, summarize, analyze)
+  - Execution planning and strategy
+  - Tool selection and invocation
+  - Post-processing and evidence extraction
+  - Full action tracking and transparency
+
+### 🏗️ Architecture
+- **Serverless-Ready**: Built with FastAPI, optimized for Vercel deployment
+- **In-Memory Vector Store**: Lightweight, no external vector DB dependencies
+- **Modular Design**: Clean separation between RAG engine and agentic orchestration
+- **Professional UI**: Modern, responsive interface with mode switching
+
+### 🔧 Technical Stack
+- **Backend**: FastAPI (Python)
+- **Vector Store**: NumPy-based cosine similarity search
+- **LLM**: GPT-4o via GitHub Models (Azure-backed)
+- **Embeddings**: text-embedding-3-small
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3
+
+---
+
+## Architecture
+
+### System Components
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Frontend (public/)                    │
+│  - Modern UI with mode selector                         │
+│  - Document upload interface                            │
+│  - Chat interface                                       │
+└────────────────────┬────────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────────┐
+│                   API Layer (api/)                       │
+│  - /health: Health check                                │
+│  - /upload: Document ingestion                          │
+│  - /query: Simple RAG endpoint                          │
+│  - /search: Unified endpoint (RAG + Agentic)            │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+┌───────▼────────┐      ┌─────────▼──────────┐
+│  Simple RAG    │      │  Agentic Search    │
+│  (Direct)      │      │  (Orchestrated)    │
+└───────┬────────┘      └─────────┬──────────┘
+        │                         │
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼──────────┐
+        │   RAG Engine (src/)   │
+        │  - Vector storage     │
+        │  - Retrieval          │
+        │  - Generation         │
+        └───────────────────────┘
+```
+
+### Backend Structure
+
+```
+backend/
+├── app/
+│   ├── controllers/
+│   │   └── search_controller.py    # Routes requests to RAG/Agentic
+│   └── services/
+│       └── agentic_search.py       # Agentic pipeline implementation
+api/
+└── index.py                        # FastAPI application & endpoints
+
+src/
+├── rag_engine.py                   # Core RAG functionality
+├── chunker.py                      # Text chunking utilities
+├── ingest.py                       # Document ingestion
+└── llm_client.py                   # LLM client wrapper
+```
 
 ---
 
@@ -22,92 +100,417 @@ This is a Retrieval-Augmented Generation (RAG) system designed to answer questio
 ### 1. Prerequisites
 - Python 3.9+
 - A GitHub account (for GitHub Models inference)
-- Node.js & Vercel CLI (for deployment)
+- Node.js & Vercel CLI (optional, for deployment)
 
 ### 2. Local Installation
+
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd rag_mini_project
+cd "Enterprise RAG + Agentic Search Platform"
 
 # Install Python dependencies
 pip install -r requirements.txt
 ```
 
 ### 3. Environment Variables
-You strictly use **GitHub Models** (Free Tier).
-1. Get a token from [https://github.com/settings/tokens](https://github.com/settings/tokens).
-2. Create a `.env` file locally:
-   ```bash
-   GITHUB_TOKEN=your_token_here_starting_with_github_pat
-   ```
-   *Note: The code automatically strips invisible whitespace from the token to prevent connection errors.*
+
+Create a `.env` file in the project root:
+
+```bash
+GITHUB_TOKEN=your_token_here_starting_with_github_pat
+```
+
+**Getting a GitHub Token:**
+1. Go to [GitHub Settings > Tokens](https://github.com/settings/tokens)
+2. Generate a new Personal Access Token (PAT)
+3. Copy the token (starts with `github_pat_`)
+4. Add it to your `.env` file
+
+*Note: The code automatically strips whitespace from the token to prevent connection errors.*
 
 ### 4. Running Locally
+
+#### Start the Backend API
 ```bash
-# Use unvicorn to run the internal API
-python -m uvicorn api.index:app --reload
+# From project root
+python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000
 ```
-Visit `http://127.0.0.1:8000` to see the backend, or open `public/index.html` in a browser.
+
+#### Start the Frontend Server
+```bash
+# In a separate terminal, from public/ directory
+cd public
+python -m http.server 8080
+```
+
+#### Access the Application
+- **Frontend**: http://127.0.0.1:8080
+- **Backend API**: http://127.0.0.1:8000
+- **API Docs**: http://127.0.0.1:8000/docs (FastAPI auto-generated docs)
+- **Health Check**: http://127.0.0.1:8000/health
 
 ---
 
-## Deployment via Vercel
+## API Endpoints
 
-The project is configured for Vercel out of the box (`vercel.json`).
+### GET `/health`
+Health check endpoint.
 
-### 1. Install & Login
-```bash
-npm i -g vercel
-vercel login
+**Response:**
+```json
+{
+  "status": "ok",
+  "rag_initialized": false,
+  "token_set": true,
+  "documents_in_memory": 0
+}
 ```
 
-### 2. Deploy
-```bash
-vercel --prod
+### POST `/upload`
+Upload and ingest documents.
+
+**Request:** `multipart/form-data` with `file` field
+
+**Response:**
+```json
+{
+  "message": "Processed filename.pdf. Indexed 15/15 chunks.",
+  "filename": "filename.pdf",
+  "chunks_total": 15,
+  "chunks_indexed": 15
+}
 ```
 
-### 3. Configure Secrets (CRITICAL)
-In your Vercel Project Dashboard:
-1. Go to **Settings** > **Environment Variables**.
-2. Add `GITHUB_TOKEN`.
-   - **Value**: Your raw GitHub PAT.
-   - **IMPORTANT**: Ensure you do NOT accidentally copy a newline at the end. (Though the code now handles this, it's best practice).
+### POST `/query`
+Simple RAG query endpoint (legacy, for backward compatibility).
+
+**Request:**
+```json
+{
+  "query": "What is the refund policy?"
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "...",
+  "sources": ["refund_policy.pdf"],
+  "context": ["chunk1", "chunk2", ...]
+}
+```
+
+### POST `/search`
+Unified search endpoint with mode selection.
+
+**Request:**
+```json
+{
+  "query": "Compare refund policy and cancellation policy",
+  "mode": "rag"  // or "agentic"
+}
+```
+
+**Response (Simple RAG Mode):**
+```json
+{
+  "mode": "rag",
+  "answer": "...",
+  "sources": ["refund_policy.pdf"],
+  "context": ["chunk1", "chunk2"]
+}
+```
+
+**Response (Agentic Mode):**
+```json
+{
+  "mode": "agentic",
+  "intent": "compare",
+  "agent_plan": {
+    "strategy": "Split query into components, retrieve relevant sections for each, then synthesize comparison",
+    "search_queries": ["refund policy", "cancellation policy"],
+    "tools_used": ["rag_retrieval"],
+    "post_processing_method": "combine_and_compare"
+  },
+  "actions_taken": [
+    "Detected intent: compare",
+    "Created execution plan: ...",
+    "Selected RAG retrieval tool",
+    "Executing RAG retrieval for: 'refund policy'",
+    "Retrieved 5 relevant chunks",
+    "Starting post-processing: combine_and_compare"
+  ],
+  "answer": "...",
+  "evidence": [
+    {
+      "source": "refund_policy.pdf",
+      "excerpt": "Refunds must be requested within 30 days..."
+    }
+  ],
+  "sources": ["refund_policy.pdf", "cancellation_policy.pdf"],
+  "confidence": 0.85
+}
+```
 
 ---
 
 ## Usage Guide
 
-1. **Start the Chat**: Open the app.
-2. **Check Health**: If it fails, check `/api/health` to see if the token is loaded (`token_set: true`).
-3. **Upload Documents**: Click the 📎 Paperclip icon.
-   - Upload `refund_policy.txt` or `shipping_policy.pdf`.
-   - Wait for the "Indexed X/X chunks" message.
-   - **Note on Limits**: Vercel has a 10-second timeout. Process small files (<20 pages) for best results.
-4. **Ask Questions**:
-   - "What is the refund window?"
-   - "Can I return a gift card?"
+### 1. Start the Application
+Follow the setup instructions above to start both backend and frontend servers.
+
+### 2. Upload Documents
+- Click the upload icon (📎) in the input area
+- Select `.txt` or `.pdf` files
+- Wait for the "Indexed X/X chunks" confirmation message
+- **Note**: Vercel has a 10-second timeout limit. For large files, split them into smaller chunks.
+
+### 3. Query the System
+
+#### Simple RAG Mode
+Select "Simple RAG" mode from the header tabs, then ask questions like:
+- "What is the refund policy?"
+- "How many days do I have to return an item?"
+- "What are the shipping options?"
+
+**Characteristics:**
+- Fast, direct answers
+- Simple response format
+- Best for straightforward lookups
+
+#### Agentic Search Mode
+Select "Agentic" mode from the header tabs, then try:
+
+**Comparison Queries:**
+- "Compare refund policy and cancellation policy"
+- "What's the difference between standard and express shipping?"
+
+**Analysis Queries:**
+- "Analyze the refund policy requirements"
+- "Explain how the cancellation process works"
+
+**Summarization:**
+- "Summarize the shipping policy"
+- "Give me an overview of all return policies"
+
+**Characteristics:**
+- Intent-aware processing
+- Multi-step reasoning
+- Evidence extraction
+- Action tracking
+- Higher confidence scores with structured metadata
 
 ---
 
-## Architecture
+## How It Works
 
-- **Backend**: `api/index.py` (FastAPI) handles HTTP requests.
-- **Core Logic**: `src/rag_engine.py` manages the document store logic.
-   - **Ingestion**: Reads text/PDFs, chunks them (600 chars), and calls OpenAI Embeddings (`text-embedding-3-small`).
-   - **Storage**: Python Lists (Ephemeral). **Does not persist after server sleep**.
-   - **Retrieval**: Cosine similarity search using `NumPy`.
-- **Frontend**: Vanilla JS/HTML (`public/folder`).
+### Simple RAG Mode
+
+```
+User Query
+    ↓
+RAG Engine.generate_answer()
+    ├── Vector Retrieval (semantic search)
+    ├── Context Assembly
+    └── LLM Generation
+    ↓
+Answer + Sources
+```
+
+**Key Points:**
+- Single-step process
+- Direct retrieval and generation
+- Fast response times
+- Simple architecture
+
+### Agentic Search Mode
+
+```
+User Query
+    ↓
+Intent Detection (lookup/compare/summarize/analyze)
+    ↓
+Planning Phase
+    ├── Strategy Selection
+    ├── Query Decomposition (if comparison)
+    └── Tool Selection
+    ↓
+Tool Execution
+    └── RAG Engine.query() [Used as a tool, not generate_answer()]
+    ↓
+Post-Processing (varies by intent)
+    ├── Combine results (comparisons)
+    ├── Format evidence
+    └── Generate structured answer
+    ↓
+Final Response with Metadata
+    ├── Answer
+    ├── Evidence
+    ├── Agent Plan
+    ├── Actions Taken
+    └── Confidence Score
+```
+
+**Key Points:**
+- Multi-phase orchestration
+- RAG used as a tool (not direct answer generation)
+- Intent-specific post-processing
+- Full transparency with action tracking
+- Structured evidence extraction
+
+**Architectural Difference:**
+- **Simple RAG**: Calls `rag_engine.generate_answer()` directly
+- **Agentic**: Uses `rag_engine.query()` as a tool, then does its own post-processing
+
+See [AGENTIC_ARCHITECTURE.md](AGENTIC_ARCHITECTURE.md) for detailed architecture documentation.
+
+---
+
+## Deployment
+
+### Vercel Deployment
+
+The project is configured for Vercel serverless deployment.
+
+#### 1. Install Vercel CLI
+```bash
+npm i -g vercel
+vercel login
+```
+
+#### 2. Deploy
+```bash
+vercel --prod
+```
+
+#### 3. Configure Environment Variables
+
+In Vercel Dashboard:
+1. Go to **Settings** > **Environment Variables**
+2. Add `GITHUB_TOKEN` with your GitHub Personal Access Token
+3. Ensure no trailing newlines or spaces
+
+#### 4. Important Notes
+- **Timeout Limit**: Vercel functions have a 10-second timeout
+- **Document Size**: Upload smaller files (<20 pages) or split large documents
+- **Ephemeral Storage**: Documents stored in-memory (lost on serverless function sleep)
+- **Auto-ingest**: Disabled on startup to prevent timeout issues
+
+---
 
 ## Troubleshooting
 
-- **"Connection Error" / "Illegal header value"**:
-  - This typically means your `GITHUB_TOKEN` had a trailing newline/space. The latest code fixes this automatically with `.strip()`, but check your env vars if it persists.
-- **"Indexed 0/X chunks"**:
-  - This means the Embedding API failed silently. Check the Chat UI for the full error traceback.
-- **"504 Gateway Timeout"**:
-  - You uploaded a file that was too large (taking >10s to process). Split the file or upload smaller chunks.
+### Backend Issues
+
+**"Connection Error" / "Illegal header value"**
+- Check that `GITHUB_TOKEN` doesn't have trailing newlines/spaces
+- Code auto-strips whitespace, but verify your `.env` file
+
+**"Indexed 0/X chunks"**
+- Embedding API may have failed
+- Check backend logs for error messages
+- Verify `GITHUB_TOKEN` is set correctly
+
+**"API Rate Limit Exceeded" / "429 Rate Limit"**
+- **GitHub Models Free Tier**: Limited to 50 requests per 24 hours
+- **Solutions**:
+  - Wait approximately 24 hours for the rate limit to reset
+  - Use an OpenAI API key instead (set `OPENAI_API_KEY` in `.env` file)
+  - Use a different GitHub token (if you have multiple accounts)
+  - Upgrade to a paid GitHub Models plan (if available)
+- The error message will show the exact wait time remaining
+
+**"504 Gateway Timeout" (Vercel)**
+- File too large for 10-second timeout
+- Split into smaller files or process locally first
+- Reduce chunk size in `Chunker` settings
+
+**Import Errors**
+- Ensure Python path includes project root
+- Check that all dependencies are installed: `pip install -r requirements.txt`
+
+### Frontend Issues
+
+**"Error connecting to the server"**
+- Verify backend is running on port 8000
+- Check CORS settings (should allow all origins in dev)
+- Try `http://localhost:8000` instead of `127.0.0.1:8000`
+
+**Mode selector not working**
+- Hard refresh browser (Ctrl+F5)
+- Check browser console for JavaScript errors
+- Ensure `script.js` is loaded correctly
+
+---
+
+## Project Structure
+
+```
+Enterprise RAG + Agentic Search Platform/
+├── api/
+│   └── index.py                    # FastAPI application
+├── backend/
+│   └── app/
+│       ├── controllers/
+│       │   └── search_controller.py
+│       └── services/
+│           └── agentic_search.py
+├── src/
+│   ├── rag_engine.py              # Core RAG engine
+│   ├── chunker.py                 # Text chunking
+│   ├── ingest.py                  # Document ingestion
+│   ├── llm_client.py              # LLM client
+│   └── prompts.py                 # Prompt templates
+├── public/
+│   ├── index.html                 # Frontend UI
+│   ├── script.js                  # Frontend logic
+│   └── style.css                  # Styling
+├── data/
+│   └── *.txt, *.pdf               # Sample documents
+├── requirements.txt               # Python dependencies
+├── vercel.json                    # Vercel configuration
+├── .env                           # Environment variables (create this)
+├── README.md                      # This file
+└── AGENTIC_ARCHITECTURE.md        # Architecture documentation
+```
+
+---
+
+## Key Technologies
+
+- **FastAPI**: Modern, fast web framework for building APIs
+- **NumPy**: Vector operations and cosine similarity
+- **OpenAI SDK**: LLM and embeddings via GitHub Models
+- **Python 3.9+**: Core language
+- **HTML5/CSS3/JavaScript**: Frontend (no framework dependencies)
+
+---
 
 ## Future Improvements
-- **Persistence**: Add Redis or a real Vector DB (Pinecone) to keep knowledge alive between sessions.
-- **Async Ingestion**: Move ingestion to a background queue to bypass the 10s timeout.
+
+- **Persistence**: Redis or Pinecone integration for document persistence
+- **Async Processing**: Background queue for document ingestion
+- **Multi-modal Support**: Image and table extraction from PDFs
+- **Advanced Agentic Features**: Multi-agent collaboration, tool chaining
+- **Analytics**: Query analytics and performance monitoring
+- **User Authentication**: Multi-user support with document access control
+- **Export Features**: Export conversations and search results
+
+---
+
+## License
+
+[Your License Here]
+
+---
+
+## Contributing
+
+[Your Contributing Guidelines Here]
+
+---
+
+## Contact
+
+[Your Contact Information Here]

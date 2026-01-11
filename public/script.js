@@ -8,13 +8,35 @@ document.addEventListener('DOMContentLoaded', () => {
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    function addMessage(text, type, sources = []) {
+    function removeWelcomeMessage() {
+        const welcomeMsg = chatArea.querySelector('.welcome-message');
+        if (welcomeMsg) {
+            welcomeMsg.remove();
+        }
+    }
+
+    function addMessage(text, type, sources = [], isMarkdown = false) {
+        // Remove welcome message on first message
+        removeWelcomeMessage();
+        
         // Remove typing indicator temporarily to append message
-        chatArea.removeChild(typingIndicator);
+        if (chatArea.contains(typingIndicator)) {
+            chatArea.removeChild(typingIndicator);
+        }
 
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', type);
-        msgDiv.textContent = text;
+        
+        if (isMarkdown) {
+            // Simple markdown rendering for agentic responses
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+            msgDiv.innerHTML = html;
+        } else {
+            msgDiv.textContent = text;
+        }
 
         if (sources && sources.length > 0) {
             const sourceDiv = document.createElement('div');
@@ -34,17 +56,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showTyping() {
+        removeWelcomeMessage();
         typingIndicator.style.display = 'flex';
+        typingIndicator.classList.add('show');
         scrollToBottom();
     }
 
     function hideTyping() {
         typingIndicator.style.display = 'none';
+        typingIndicator.classList.remove('show');
     }
+
+    // Mode selector tabs
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    let currentMode = 'agentic'; // Default mode
+    
+    modeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs
+            modeTabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
+            tab.classList.add('active');
+            currentMode = tab.dataset.mode;
+        });
+    });
 
     async function handleSend() {
         const query = userInput.value.trim();
         if (!query) return;
+
+        // Get selected mode
+        const mode = currentMode;
 
         // Add user message
         addMessage(query, 'user');
@@ -56,14 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Determine API URL: Use localhost:8000 if we are on localhost (dev mode), otherwise relative path (prod/Vercel)
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiUrl = isLocal ? 'http://localhost:8000/query' : '/api/query';
+            const apiUrl = isLocal ? 'http://localhost:8000/search' : '/api/search';
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({ query: query, mode: mode })
             });
 
             const data = await response.json();
@@ -71,10 +113,83 @@ document.addEventListener('DOMContentLoaded', () => {
             hideTyping();
 
             if (data.answer) {
-                // The API might return sources in 'retrieved_docs' or 'sources' depending on our implementation
-                // Based on previous step, I should align api/index.py to return standard format
-                const sources = data.sources || data.retrieved_docs || [];
-                addMessage(data.answer, 'bot', sources);
+                // Handle agentic mode response with agent plan and actions
+                if (data.mode === 'agentic' && (data.agent_plan || data.actions_taken)) {
+                    // Build enhanced answer for agentic mode
+                    let answerText = '';
+                    
+                    // Add mode indicator
+                    answerText += `🤖 **AGENTIC SEARCH MODE**\n\n`;
+                    
+                    // Add intent badge
+                    if (data.intent) {
+                        const intentMap = {
+                            'compare': '🔀 COMPARISON',
+                            'lookup': '🔍 LOOKUP',
+                            'summarize': '📋 SUMMARIZE',
+                            'analyze': '🔬 ANALYZE'
+                        };
+                        const intentBadge = intentMap[data.intent] || `🔍 ${data.intent.toUpperCase()}`;
+                        answerText += `**Intent:** ${intentBadge}\n\n`;
+                    }
+                    
+                    // Add agent plan
+                    if (data.agent_plan) {
+                        answerText += `**Agent Plan:**\n`;
+                        answerText += `• Strategy: ${data.agent_plan.strategy}\n`;
+                        if (data.agent_plan.search_queries && data.agent_plan.search_queries.length > 0) {
+                            answerText += `• Search Queries: ${data.agent_plan.search_queries.join(', ')}\n`;
+                        }
+                        answerText += `\n`;
+                    }
+                    
+                    // Add actions taken
+                    if (data.actions_taken && data.actions_taken.length > 0) {
+                        answerText += `**Actions Taken:**\n`;
+                        data.actions_taken.forEach((action, idx) => {
+                            answerText += `${idx + 1}. ${action}\n`;
+                        });
+                        answerText += `\n`;
+                    }
+                    
+                    // Add evidence
+                    if (data.evidence && data.evidence.length > 0) {
+                        answerText += `**Evidence:** (${data.evidence.length} source(s))\n`;
+                        data.evidence.slice(0, 2).forEach((ev, idx) => {
+                            answerText += `${idx + 1}. ${ev.source}\n`;
+                        });
+                        answerText += `\n`;
+                    }
+                    
+                    // Add confidence if available
+                    if (data.confidence) {
+                        answerText += `**Confidence:** ${(data.confidence * 100).toFixed(0)}%\n\n`;
+                    }
+                    
+                    // Add separator
+                    answerText += `---\n\n`;
+                    
+                    // Add the actual answer
+                    answerText += `**Answer:**\n${data.answer}`;
+                    
+                    const sources = data.sources || [];
+                    addMessage(answerText, 'bot', sources, true); // true = isMarkdown
+                    
+                    // Show detailed info in console for debugging/demo
+                    console.log('🤖 Agentic Search Details:');
+                    console.log('Mode:', data.mode);
+                    console.log('Intent:', data.intent);
+                    console.log('Agent Plan:', data.agent_plan);
+                    console.log('Actions Taken:', data.actions_taken);
+                    console.log('Evidence:', data.evidence);
+                    console.log('Confidence:', data.confidence);
+                } else {
+                    // Simple RAG mode
+                    let answerText = `📚 **SIMPLE RAG MODE**\n\n`;
+                    answerText += `**Answer:**\n${data.answer}`;
+                    const sources = data.sources || data.retrieved_docs || [];
+                    addMessage(answerText, 'bot', sources, true); // true = isMarkdown
+                }
             } else {
                 addMessage("Sorry, I encountered an error.", 'bot');
             }
