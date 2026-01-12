@@ -98,57 +98,88 @@ src/
 ## Setup Instructions
 
 ### 1. Prerequisites
-- Python 3.9+
-- A GitHub account (for GitHub Models inference)
-- Node.js & Vercel CLI (optional, for deployment)
+- **Python 3.9+**
+- **Git**
+- A terminal (PowerShell, Command Prompt, or Bash)
 
-### 2. Local Installation
+### 2. Installation
 
 ```bash
-# Clone the repository
+# Clone the repository (if you haven't already)
 git clone <repository-url>
 cd "Enterprise RAG + Agentic Search Platform"
 
-# Install Python dependencies
+# Create a virtual environment (Optional but Recommended)
+python -m venv .venv
+# Windows:
+.\.venv\Scripts\Activate
+# Mac/Linux:
+source .venv/bin/activate
+
+# Install Dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Environment Variables
+### 3. Configuration (Critical Step)
 
-Create a `.env` file in the project root:
+1.  Create a file named `.env` in the project root.
+2.  Add **ONE** of the following tokens:
 
+**Option A: OpenAI API Key (Recommended)**
+*Best for reliability and avoiding rate limits.*
 ```bash
-GITHUB_TOKEN=your_token_here_starting_with_github_pat
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-**Getting a GitHub Token:**
-1. Go to [GitHub Settings > Tokens](https://github.com/settings/tokens)
-2. Generate a new Personal Access Token (PAT)
-3. Copy the token (starts with `github_pat_`)
-4. Add it to your `.env` file
-
-*Note: The code automatically strips whitespace from the token to prevent connection errors.*
-
-### 4. Running Locally
-
-#### Start the Backend API
+**Option B: GitHub Token (Free)**
+*Good for testing, but limited to 50 requests/day.*
 ```bash
-# From project root
-python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000
+GITHUB_TOKEN=github_pat_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-#### Start the Frontend Server
+### 4. Running the Application
+
+You need to run the **Backend** and **Frontend** in separate terminals.
+
+#### Terminal 1: Backend API
+Runs on **Port 8001** (to avoid conflicts).
+
 ```bash
-# In a separate terminal, from public/ directory
+# Make sure your virtual env is active
+python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8001
+```
+
+#### Terminal 2: Frontend UI
+Runs on **Port 8080**.
+
+```bash
 cd public
 python -m http.server 8080
 ```
 
-#### Access the Application
-- **Frontend**: http://127.0.0.1:8080
-- **Backend API**: http://127.0.0.1:8000
-- **API Docs**: http://127.0.0.1:8000/docs (FastAPI auto-generated docs)
-- **Health Check**: http://127.0.0.1:8000/health
+### 5. Access the App
+Open your browser and go to:
+👉 **http://127.0.0.1:8080**
+
+The frontend will automatically connect to the backend at `http://localhost:8001`.
+
+### 6. Quick Start Guide (Simplified)
+For a straightforward, copy-paste guide on running this project, see **[HOW_TO_RUN.md](HOW_TO_RUN.md)**.
+
+### 7. Ingestion (Adding Documents)
+
+There are **two ways** to add documents (PDF/TXT) to the system:
+
+#### A. Web Interface (Recommended)
+1. Go to the app at `http://127.0.0.1:8080`.
+2. Click the **Upload Button** (⬆️ icon).
+3. Select your file. It will be indexed immediately.
+   * *Note: Data is ephemeral (in-memory) and resets when you restart the backend.*
+
+#### B. Command Line (CLI Mode)
+1. Place files in the `data/` folder.
+2. Run: `python main.py --ingest --query "My question"`
+   * *Note: CLI ingestion does NOT update the running web server's memory.*
 
 ---
 
@@ -403,39 +434,33 @@ In Vercel Dashboard:
 
 ### Backend Issues
 
-**"Connection Error" / "Illegal header value"**
-- Check that `GITHUB_TOKEN` doesn't have trailing newlines/spaces
-- Code auto-strips whitespace, but verify your `.env` file
+**"API Rate Limit Exceeded" / "429 Rate Limit"**
+- **GitHub Models Free Tier**: Limited to 50 requests per 24 hours.
+- **Solution (Recommended)**: Use an OpenAI API key instead.
+  1. Get a key from [platform.openai.com](https://platform.openai.com).
+  2. Add `OPENAI_API_KEY=sk-...` to your `.env` file.
+  3. Restart the backend.
+- **Alternative**: Wait ~24 hours for the limit to reset.
+
+**"Address already in use" / "WinError 10013"**
+- Port 8000 might be blocked or used by another app.
+- **Solution**: We now use **Port 8001** by default. Ensure you run the startup command with `--port 8001`.
 
 **"Indexed 0/X chunks"**
-- Embedding API may have failed
-- Check backend logs for error messages
-- Verify `GITHUB_TOKEN` is set correctly
-
-**"API Rate Limit Exceeded" / "429 Rate Limit"**
-- **GitHub Models Free Tier**: Limited to 50 requests per 24 hours
-- **Solutions**:
-  - Wait approximately 24 hours for the rate limit to reset
-  - Use an OpenAI API key instead (set `OPENAI_API_KEY` in `.env` file)
-  - Use a different GitHub token (if you have multiple accounts)
-  - Upgrade to a paid GitHub Models plan (if available)
-- The error message will show the exact wait time remaining
-
-**"504 Gateway Timeout" (Vercel)**
-- File too large for 10-second timeout
-- Split into smaller files or process locally first
-- Reduce chunk size in `Chunker` settings
+- Embedding API may have failed.
+- Check backend logs for error messages.
+- Verify your token is correct in `.env`.
 
 **Import Errors**
-- Ensure Python path includes project root
-- Check that all dependencies are installed: `pip install -r requirements.txt`
+- Ensure you have activated your virtual environment (`.venv`).
+- Run `pip install -r requirements.txt` again.
 
 ### Frontend Issues
 
 **"Error connecting to the server"**
-- Verify backend is running on port 8000
-- Check CORS settings (should allow all origins in dev)
-- Try `http://localhost:8000` instead of `127.0.0.1:8000`
+- Verify backend is running on **Port 8001**.
+- Check that you are accessing the frontend at `http://127.0.0.1:8080`.
+- Only use `localhost` (not IP) if you are in development mode.
 
 **Mode selector not working**
 - Hard refresh browser (Ctrl+F5)

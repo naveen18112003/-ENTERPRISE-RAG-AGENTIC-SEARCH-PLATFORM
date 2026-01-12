@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addMessage(text, type, sources = [], isMarkdown = false) {
         // Remove welcome message on first message
         removeWelcomeMessage();
-        
+
         // Remove typing indicator temporarily to append message
         if (chatArea.contains(typingIndicator)) {
             chatArea.removeChild(typingIndicator);
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', type);
-        
+
         if (isMarkdown) {
             // Simple markdown rendering for agentic responses
             let html = text
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mode selector tabs
     const modeTabs = document.querySelectorAll('.mode-tab');
     let currentMode = 'agentic'; // Default mode
-    
+
     modeTabs.forEach(tab => {
         tab.addEventListener('click', () => {
             // Remove active class from all tabs
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Determine API URL: Use localhost:8000 if we are on localhost (dev mode), otherwise relative path (prod/Vercel)
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiUrl = isLocal ? 'http://localhost:8000/search' : '/api/search';
+            const apiUrl = isLocal ? 'http://127.0.0.1:8001/search' : '/api/search';
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -117,10 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.mode === 'agentic' && (data.agent_plan || data.actions_taken)) {
                     // Build enhanced answer for agentic mode
                     let answerText = '';
-                    
+
                     // Add mode indicator
                     answerText += `🤖 **AGENTIC SEARCH MODE**\n\n`;
-                    
+
                     // Add intent badge
                     if (data.intent) {
                         const intentMap = {
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const intentBadge = intentMap[data.intent] || `🔍 ${data.intent.toUpperCase()}`;
                         answerText += `**Intent:** ${intentBadge}\n\n`;
                     }
-                    
+
                     // Add agent plan
                     if (data.agent_plan) {
                         answerText += `**Agent Plan:**\n`;
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         answerText += `\n`;
                     }
-                    
+
                     // Add actions taken
                     if (data.actions_taken && data.actions_taken.length > 0) {
                         answerText += `**Actions Taken:**\n`;
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         answerText += `\n`;
                     }
-                    
+
                     // Add evidence
                     if (data.evidence && data.evidence.length > 0) {
                         answerText += `**Evidence:** (${data.evidence.length} source(s))\n`;
@@ -160,21 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         answerText += `\n`;
                     }
-                    
+
                     // Add confidence if available
                     if (data.confidence) {
                         answerText += `**Confidence:** ${(data.confidence * 100).toFixed(0)}%\n\n`;
                     }
-                    
+
                     // Add separator
                     answerText += `---\n\n`;
-                    
+
                     // Add the actual answer
                     answerText += `**Answer:**\n${data.answer}`;
-                    
+
                     const sources = data.sources || [];
                     addMessage(answerText, 'bot', sources, true); // true = isMarkdown
-                    
+
                     // Show detailed info in console for debugging/demo
                     console.log('🤖 Agentic Search Details:');
                     console.log('Mode:', data.mode);
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Determine API URL
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiUrl = isLocal ? 'http://localhost:8000/upload' : '/api/upload';
+            const apiUrl = isLocal ? 'http://127.0.0.1:8001/upload' : '/api/upload';
 
             const response = await fetch(apiUrl, {
                 method: 'POST',

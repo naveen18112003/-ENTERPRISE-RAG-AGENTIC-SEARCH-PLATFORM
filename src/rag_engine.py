@@ -19,26 +19,38 @@ class RagEngine:
         self.ids = []        # List of IDs
         self.embeddings = [] # List of embedding vectors (numpy arrays)
 
-        # Initialize OpenAI client for GitHub Models
-        api_key = os.getenv("GITHUB_TOKEN")
-        if not api_key:
-            print("WARNING: GITHUB_TOKEN not found. RAG functionality will fail.")
+        # Initialize OpenAI client
+        # Priority: OPENAI_API_KEY (Standard - Paid/Reliable) -> GITHUB_TOKEN (Azure - Free/Limited)
+        github_token = os.getenv("GITHUB_TOKEN")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        
+        if openai_key and "your_openai_api_key_here" not in openai_key:
+            print("Using Standard OpenAI (OPENAI_API_KEY)")
+            self.openai_client = OpenAI(
+                api_key=openai_key.strip()
+            )
+        elif github_token:
+            print("Using GitHub Models (GITHUB_TOKEN)")
+            self.openai_client = OpenAI(
+                base_url="https://models.inference.ai.azure.com",
+                api_key=github_token.strip()
+            )
         else:
-            api_key = api_key.strip() # Remove trailing newlines that cause httpx ProtocolError
+            print("WARNING: Neither GITHUB_TOKEN nor OPENAI_API_KEY found. RAG functionality will fail.")
+            self.openai_client = None
         
-        self.openai_client = OpenAI(
-            base_url="https://models.inference.ai.azure.com",
-            api_key=api_key
-        )
-        
-        # We also need an embedding client (can reuse the same client or logic)
-        # GitHub models endoint for embeddings: text-embedding-3-small
+        # We also need an embedding client
+        # Both GitHub models and OpenAI support text-embedding-3-small
         self.embedding_model = "text-embedding-3-small"
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embeddings using GitHub Models.
         """
+        if not self.openai_client:
+            print("Error: OpenAI client not initialized.")
+            return [[] for _ in texts] # Return empty embeddings to avoid immediate crash, but will fail later or result in 0 matches
+
         try:
             # Batching is better, but for simplicity/safety with mixed endpoints we do simple call
             # Note: GitHub models API might output different format, standard OpenAI call usually works
@@ -56,7 +68,10 @@ class RagEngine:
         Add chunks to the in-memory store.
         """
         if not chunks:
-            return
+            return 0, "No chunks provided"
+            
+        if not self.openai_client:
+             return 0, "OpenAI Client not initialized (Missing Tokens)"
 
         print(f"Generating embeddings for {len(chunks)} chunks...")
         try:
@@ -69,7 +84,7 @@ class RagEngine:
         # Filter out failed embeddings
         count = 0
         for i, text in enumerate(chunks):
-            if new_embeddings[i]:
+            if i < len(new_embeddings) and new_embeddings[i]:
                 self.documents.append(text)
                 self.metadatas.append(metadatas[i])
                 self.ids.append(str(uuid.uuid4()))
@@ -86,6 +101,10 @@ class RagEngine:
         """
         if not self.embeddings:
             return {'documents': [[]], 'metadatas': [[]]}
+            
+        if not self.openai_client:
+             print("Warning: Client not initialized, cannot embed query.")
+             return {'documents': [[]], 'metadatas': [[]]}
 
         # 1. Embed query
         query_embedding_res = self._get_embeddings([query_text])
@@ -133,10 +152,27 @@ class RagEngine:
         Retrieve context and generate answer using GitHub Models.
         """
         # 1. Retrieve
-        retrieval_results = self.query(query_text, n_results=n_results)
-        
-        documents = retrieval_results['documents'][0] if retrieval_results['documents'] else []
-        metadatas = retrieval_results['metadatas'][0] if retrieval_results['metadatas'] else []
+        try:
+            retrieval_results = self.query(query_text, n_results=n_results)
+            
+            documents = retrieval_results['documents'][0] if retrieval_results['documents'] else []
+            metadatas = retrieval_results['metadatas'][0] if retrieval_results['metadatas'] else []
+        except Exception as e:
+            # Handle error during retrieval (likely embedding rate limit)
+            error_str = str(e)
+            if "429" in error_str or "RateLimitReached" in error_str or "rate limit" in error_str.lower():
+                 return {
+                    "answer": f"⚠️ API Rate Limit Exceeded (during retrieval): Please wait before retrying or switch to an OPENAI_API_KEY.",
+                    "context": [],
+                    "sources": []
+                 }
+            else:
+                 return {
+                    "answer": f"Error during retrieval: {error_str}",
+                    "context": [],
+                    "sources": []
+                 }
+
         
         if not documents:
             return {
@@ -144,6 +180,13 @@ class RagEngine:
                 "context": [],
                 "sources": []
             }
+            
+        if not self.openai_client:
+             return {
+                "answer": "Error: OpenAI Client not initialized. Please set GITHUB_TOKEN or OPENAI_API_KEY.",
+                "context": documents,
+                "sources": [m.get('source', 'Unknown') for m in metadatas]
+             }
             
         # 2. Construct Prompt
         context_str = "\n\n".join([f"--- Source: {m.get('source', 'Unknown')} ---\n{d}" for d, m in zip(documents, metadatas)])
@@ -164,8 +207,8 @@ class RagEngine:
             answer = response.choices[0].message.content
         except Exception as e:
             error_str = str(e)
-            # Check for rate limit errors
-            if "429" in error_str or "RateLimitReached" in error_str or "rate limit" in error_str.lower():
+            # Check for rate limit errors more broadly
+            if "429" in error_str or "RateLimitReached" in error_str or "rate limit" in error_str.lower() or "limit" in error_str.lower():
                 wait_time = None
                 # Try to extract wait time from error message
                 import re
@@ -174,9 +217,15 @@ class RagEngine:
                     wait_seconds = int(wait_match.group(1))
                     wait_hours = wait_seconds / 3600
                     wait_time = f"{wait_hours:.1f} hours"
-                answer = f"⚠️ API Rate Limit Exceeded: The GitHub Models API has a free tier limit of 50 requests per 24 hours. " \
+                
+                # Check if it was UserByModelByDay
+                limit_type = ""
+                if "UserByModelByDay" in error_str:
+                    limit_type = " (Daily Limit)"
+
+                answer = f"⚠️ API Rate Limit Exceeded{limit_type}: The GitHub Models API has a free tier limit of 50 requests per 24 hours. " \
                         f"{f'Please wait {wait_time} before trying again.' if wait_time else 'Please wait approximately 24 hours before trying again.'} " \
-                        f"Alternatively, you can use an OpenAI API key by setting OPENAI_API_KEY in your .env file."
+                        f"\n\n💡 Solution: Add 'OPENAI_API_KEY' to your .env file to bypass this limit."
             else:
                 answer = f"Error generating answer: {error_str}"
             

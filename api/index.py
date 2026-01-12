@@ -98,7 +98,8 @@ def home():
 @app.get("/health")
 def health():
     # Basic health check that doesn't trigger RAG init if not needed
-    token_set = "GITHUB_TOKEN" in os.environ and bool(os.environ["GITHUB_TOKEN"])
+    token_set = ("GITHUB_TOKEN" in os.environ and bool(os.environ["GITHUB_TOKEN"])) or \
+                ("OPENAI_API_KEY" in os.environ and bool(os.environ["OPENAI_API_KEY"]))
     doc_count = 0
     if rag:
         doc_count = rag.count()
