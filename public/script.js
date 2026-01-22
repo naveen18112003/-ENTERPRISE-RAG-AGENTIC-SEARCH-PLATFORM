@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error(error);
-            addMessage("Error uploading file.", 'bot');
+            addMessage(`Error uploading file: ${error.message || 'Connection error'}`, 'bot');
         }
 
         fileInput.value = '';
