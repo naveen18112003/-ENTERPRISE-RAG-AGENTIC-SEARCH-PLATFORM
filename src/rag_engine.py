@@ -51,18 +51,25 @@ class RagEngine:
 
     def _get_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
-        Generate embeddings using GitHub Models.
+        Generate embeddings using GitHub Models or OpenAI.
         """
         if not self.openai_client:
             print("Error: OpenAI client not initialized.")
             return [[] for _ in texts]
 
+        all_embeddings = []
+        batch_size = 100
+        
         try:
-            response = self.openai_client.embeddings.create(
-                input=texts,
-                model=self.embedding_model
-            )
-            return [data.embedding for data in response.data]
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                print(f"Embedding batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}...")
+                response = self.openai_client.embeddings.create(
+                    input=batch,
+                    model=self.embedding_model
+                )
+                all_embeddings.extend([data.embedding for data in response.data])
+            return all_embeddings
         except Exception as e:
             print(f"Error generating embeddings: {e}")
             raise e
