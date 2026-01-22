@@ -18,16 +18,16 @@ class RagEngine:
         self.metadatas = []
         self.ids = []
         self.embeddings = []
-19: 
-20:     def clear(self):
-21:         """
-22:         Clear the in-memory store.
-23:         """
-24:         self.documents = []
-25:         self.metadatas = []
-26:         self.ids = []
-27:         self.embeddings = []
-28:         print("Knowledge base cleared.")
+
+    def clear(self):
+        """
+        Clear the in-memory store.
+        """
+        self.documents = []
+        self.metadatas = []
+        self.ids = []
+        self.embeddings = []
+        print("Knowledge base cleared.")
 
         github_token = os.getenv("GITHUB_TOKEN", "").strip()
         openai_key = os.getenv("OPENAI_API_KEY", "").strip()
