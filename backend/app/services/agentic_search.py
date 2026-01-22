@@ -13,7 +13,6 @@ from typing import Dict, List, Tuple
 import sys
 import os
 
-# Add parent directory to path to import RAG engine
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from src.rag_engine import RagEngine
@@ -31,31 +30,25 @@ def detect_intent(query: str) -> str:
     """
     query_lower = query.lower().strip()
     
-    # Comparison intent
     comparison_patterns = ["compare", "comparison", "difference", "differences", 
                           "vs", "versus", "versus", "contrast", "different"]
     if any(pattern in query_lower for pattern in comparison_patterns):
         return "compare"
     
-    # Check for "and" with multiple concepts (comparison)
     if " and " in query_lower:
         parts = [p.strip() for p in query_lower.split(" and ")]
         if len(parts) >= 2 and all(len(p) > 3 for p in parts):
-            # Check if it's not just a conjunction in a sentence
             if not any(p in ["policy", "policies", "document", "documents"] for p in parts):
                 return "compare"
     
-    # Summarize intent
     summarize_patterns = ["summarize", "summary", "overview", "brief", "what are", "list all"]
     if any(pattern in query_lower for pattern in summarize_patterns):
         return "summarize"
     
-    # Analyze intent
     analyze_patterns = ["analyze", "analysis", "explain", "how does", "why", "what is the impact"]
     if any(pattern in query_lower for pattern in analyze_patterns):
         return "analyze"
     
-    # Default to lookup
     return "lookup"
 
 
@@ -79,7 +72,6 @@ def create_plan(intent: str, query: str) -> Dict:
     }
     
     if intent == "compare":
-        # Decompose comparison query
         query_clean = query.lower().replace("compare", "").replace("comparison", "").strip()
         if " and " in query_clean:
             parts = [p.strip() for p in query_clean.split(" and ")]
@@ -104,7 +96,7 @@ def create_plan(intent: str, query: str) -> Dict:
         plan["tools_needed"] = ["rag_retrieval"]
         plan["post_processing"] = "analyze"
         
-    else:  # lookup
+    else:
         plan["search_queries"] = [query]
         plan["strategy"] = "Direct retrieval and answer generation"
         plan["tools_needed"] = ["rag_retrieval"]
@@ -153,7 +145,6 @@ def post_process_lookup(retrieval_results: Dict, query: str, rag_engine: RagEngi
             "confidence": 0.3
         }
     
-    # Use RAG's LLM to generate answer (but we control the process)
     context_str = "\n\n".join([f"--- Source: {m.get('source', 'Unknown')} ---\n{d}" 
                                 for d, m in zip(documents, metadatas)])
     
@@ -172,10 +163,8 @@ def post_process_lookup(retrieval_results: Dict, query: str, rag_engine: RagEngi
         answer = response.choices[0].message.content
     except Exception as e:
         error_str = str(e)
-        # Check for rate limit errors
         if "429" in error_str or "RateLimitReached" in error_str or "rate limit" in error_str.lower():
             wait_time = None
-            # Try to extract wait time from error message
             import re
             wait_match = re.search(r'wait (\d+) seconds', error_str, re.IGNORECASE)
             if wait_match:
@@ -188,7 +177,6 @@ def post_process_lookup(retrieval_results: Dict, query: str, rag_engine: RagEngi
         else:
             answer = f"Error generating answer: {error_str}"
     
-    # Build evidence list
     evidence = [{"source": m.get('source', 'Unknown'), 
                  "excerpt": d[:200] + "..." if len(d) > 200 else d}
                 for d, m in zip(documents[:3], metadatas[:3])]
@@ -213,7 +201,6 @@ def post_process_compare(retrieval_results_list: List[Dict], plan: Dict, rag_eng
             "confidence": 0.3
         }
     
-    # Combine all retrieved documents
     all_documents = []
     all_metadatas = []
     all_sources = set()
@@ -231,13 +218,12 @@ def post_process_compare(retrieval_results_list: List[Dict], plan: Dict, rag_eng
             "confidence": 0.3
         }
     
-    # Build comparison context
     queries = plan.get("search_queries", [])
     context_parts = []
     for i, query in enumerate(queries):
         if i < len(retrieval_results_list):
             result = retrieval_results_list[i]
-            docs = result.get("documents", [])[:2]  # Top 2 for each
+            docs = result.get("documents", [])[:2]
             metas = result.get("metadatas", [])[:2]
             context_str = "\n".join([f"--- Source: {m.get('source', 'Unknown')} ---\n{d}" 
                                      for d, m in zip(docs, metas)])
@@ -269,9 +255,8 @@ def post_process_compare(retrieval_results_list: List[Dict], plan: Dict, rag_eng
         else:
             answer = f"Error generating comparison: {error_str}"
     
-    # Build evidence
     evidence = []
-    for result in retrieval_results_list[:2]:  # Top 2 queries
+    for result in retrieval_results_list[:2]:
         for d, m in zip(result.get("documents", [])[:1], result.get("metadatas", [])[:1]):
             evidence.append({
                 "source": m.get('source', 'Unknown'),
@@ -403,16 +388,12 @@ def agentic_search(query: str, rag_engine: RagEngine) -> Dict:
     """
     actions_taken = []
     
-    # STEP 1: Intent Detection
     intent = detect_intent(query)
     actions_taken.append(f"Detected intent: {intent}")
     
-    # STEP 2: Planning
     plan = create_plan(intent, query)
     actions_taken.append(f"Created execution plan: {plan['strategy']}")
     
-    # STEP 3: Tool Selection & Execution
-    # Decide if RAG tool is needed (in this case, always yes, but structure allows for other tools)
     if "rag_retrieval" in plan["tools_needed"]:
         actions_taken.append("Selected RAG retrieval tool")
         
@@ -423,7 +404,6 @@ def agentic_search(query: str, rag_engine: RagEngine) -> Dict:
             retrieval_results_list.append(result)
             actions_taken.append(f"Retrieved {result['count']} relevant chunks")
     
-    # STEP 4: Post-processing (varies by intent)
     actions_taken.append(f"Starting post-processing: {plan['post_processing']}")
     
     if intent == "compare":
@@ -435,11 +415,9 @@ def agentic_search(query: str, rag_engine: RagEngine) -> Dict:
         processed = post_process_summarize(retrieval_results_list[0] if retrieval_results_list else {}, query, rag_engine)
     elif intent == "analyze":
         processed = post_process_analyze(retrieval_results_list[0] if retrieval_results_list else {}, query, rag_engine)
-    else:  # lookup
+    else:
         processed = post_process_lookup(retrieval_results_list[0] if retrieval_results_list else {}, query, rag_engine)
     
-    # STEP 5: Build final response
-    # Extract sources from evidence
     sources = list(set([e.get("source", "Unknown") for e in processed.get("evidence", [])]))
     
     return {

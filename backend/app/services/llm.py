@@ -10,7 +10,6 @@ import logging
 import os
 from typing import Optional
 
-# 🔥 FORCE ENV LOAD (IMPORTANT)
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -41,7 +40,6 @@ class LLMClient:
 
         logger.info(f"[LLM ENV CHECK] GitHub token present = {bool(github_token)}")
 
-        # ✅ GitHub Models (PRIMARY)
         if github_token and OpenAI is not None:
             try:
                 self.client = OpenAI(
@@ -53,7 +51,6 @@ class LLMClient:
             except Exception as e:
                 logger.error(f"GitHub Models init failed: {e}")
 
-        # 🔁 OpenAI fallback
         if openai_key and OpenAI is not None:
             try:
                 self.client = OpenAI(api_key=openai_key)
@@ -62,7 +59,6 @@ class LLMClient:
             except Exception as e:
                 logger.error(f"OpenAI init failed: {e}")
 
-        # ❌ Mock fallback
         self.client = None
         logger.warning("No LLM provider configured; using mock LLM")
 
@@ -116,7 +112,6 @@ Answer strictly based on the above context.
                 logger.error(f"LLM error: {e}")
                 return "Error generating answer from language model."
 
-        # 🧪 Mock fallback (safe)
         if not context or not context.strip():
             return "The requested information is not available in the authorized documents."
 

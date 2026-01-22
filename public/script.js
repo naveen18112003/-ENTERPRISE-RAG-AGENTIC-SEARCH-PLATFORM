@@ -16,10 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addMessage(text, type, sources = [], isMarkdown = false) {
-        // Remove welcome message on first message
         removeWelcomeMessage();
 
-        // Remove typing indicator temporarily to append message
         if (chatArea.contains(typingIndicator)) {
             chatArea.removeChild(typingIndicator);
         }
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.classList.add('message', type);
 
         if (isMarkdown) {
-            // Simple markdown rendering for agentic responses
             let html = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -41,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sources && sources.length > 0) {
             const sourceDiv = document.createElement('div');
             sourceDiv.classList.add('sources');
-            // Deduplicate sources
             const uniqueSources = [...new Set(sources)];
             sourceDiv.textContent = "Sources: " + uniqueSources.join(", ");
             msgDiv.appendChild(sourceDiv);
@@ -49,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatArea.appendChild(msgDiv);
 
-        // Add typing indicator back at the bottom
         chatArea.appendChild(typingIndicator);
 
         scrollToBottom();
@@ -67,15 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
         typingIndicator.classList.remove('show');
     }
 
-    // Mode selector tabs
     const modeTabs = document.querySelectorAll('.mode-tab');
-    let currentMode = 'agentic'; // Default mode
+    let currentMode = 'agentic';
 
     modeTabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remove active class from all tabs
             modeTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
             tab.classList.add('active');
             currentMode = tab.dataset.mode;
         });
@@ -85,18 +77,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = userInput.value.trim();
         if (!query) return;
 
-        // Get selected mode
         const mode = currentMode;
 
-        // Add user message
         addMessage(query, 'user');
         userInput.value = '';
 
-        // Show typing
         showTyping();
 
         try {
-            // Determine API URL: Use localhost:8000 if we are on localhost (dev mode), otherwise relative path (prod/Vercel)
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const apiUrl = isLocal ? 'http://127.0.0.1:8001/search' : '/api/search';
 
@@ -113,15 +101,11 @@ document.addEventListener('DOMContentLoaded', () => {
             hideTyping();
 
             if (data.answer) {
-                // Handle agentic mode response with agent plan and actions
                 if (data.mode === 'agentic' && (data.agent_plan || data.actions_taken)) {
-                    // Build enhanced answer for agentic mode
                     let answerText = '';
 
-                    // Add mode indicator
                     answerText += `🤖 **AGENTIC SEARCH MODE**\n\n`;
 
-                    // Add intent badge
                     if (data.intent) {
                         const intentMap = {
                             'compare': '🔀 COMPARISON',
@@ -133,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         answerText += `**Intent:** ${intentBadge}\n\n`;
                     }
 
-                    // Add agent plan
                     if (data.agent_plan) {
                         answerText += `**Agent Plan:**\n`;
                         answerText += `• Strategy: ${data.agent_plan.strategy}\n`;
@@ -143,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         answerText += `\n`;
                     }
 
-                    // Add actions taken
                     if (data.actions_taken && data.actions_taken.length > 0) {
                         answerText += `**Actions Taken:**\n`;
                         data.actions_taken.forEach((action, idx) => {
@@ -152,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         answerText += `\n`;
                     }
 
-                    // Add evidence
                     if (data.evidence && data.evidence.length > 0) {
                         answerText += `**Evidence:** (${data.evidence.length} source(s))\n`;
                         data.evidence.slice(0, 2).forEach((ev, idx) => {
@@ -161,21 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         answerText += `\n`;
                     }
 
-                    // Add confidence if available
                     if (data.confidence) {
                         answerText += `**Confidence:** ${(data.confidence * 100).toFixed(0)}%\n\n`;
                     }
 
-                    // Add separator
                     answerText += `---\n\n`;
 
-                    // Add the actual answer
                     answerText += `**Answer:**\n${data.answer}`;
 
                     const sources = data.sources || [];
-                    addMessage(answerText, 'bot', sources, true); // true = isMarkdown
+                    addMessage(answerText, 'bot', sources, true);
 
-                    // Show detailed info in console for debugging/demo
                     console.log('🤖 Agentic Search Details:');
                     console.log('Mode:', data.mode);
                     console.log('Intent:', data.intent);
@@ -184,11 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Evidence:', data.evidence);
                     console.log('Confidence:', data.confidence);
                 } else {
-                    // Simple RAG mode
                     let answerText = `📚 **SIMPLE RAG MODE**\n\n`;
                     answerText += `**Answer:**\n${data.answer}`;
                     const sources = data.sources || data.retrieved_docs || [];
-                    addMessage(answerText, 'bot', sources, true); // true = isMarkdown
+                    addMessage(answerText, 'bot', sources, true);
                 }
             } else {
                 addMessage("Sorry, I encountered an error.", 'bot');
@@ -206,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') handleSend();
     });
 
-    // Upload Logic
     const uploadBtn = document.getElementById('upload-btn');
     const fileInput = document.getElementById('file-input');
 
@@ -224,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
 
         try {
-            // Determine API URL
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const apiUrl = isLocal ? 'http://127.0.0.1:8001/upload' : '/api/upload';
 
@@ -246,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             addMessage("Error uploading file.", 'bot');
         }
 
-        // Reset input
         fileInput.value = '';
     });
 });

@@ -33,12 +33,9 @@ def ingest_data(data_dir: str = "data"):
     chunker = Chunker(chunk_size=600, chunk_overlap=100)
     rag = RagEngine()
     
-    # Check if DB already populated (simple check)
     if rag.count() > 0:
         print(f"Database already contains {rag.count()} entries. Note: appending specific new files not supported in this mini-version, clearing DB recommended if re-ingesting.")
-        # We proceed to ingest anyway for this demo, usually you'd check file hashes.
     
-    # Support multiple extensions
     extensions = ["*.txt", "*.pdf"]
     file_paths = []
     for ext in extensions:

@@ -1,0 +1,12 @@
+.venv
+__pycache__
+*.pyc
+.env
+.git
+*.log
+data/
+debug_*.py
+test_*.txt
+shortnotes.md
+task.md
+.antigravity/
