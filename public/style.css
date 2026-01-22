@@ -295,6 +295,12 @@ h1 {
     transform: translateY(-1px);
 }
 
+#reset-btn:hover {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+}
+
 .input-wrapper {
     flex: 1;
     position: relative;

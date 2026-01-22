@@ -222,4 +222,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fileInput.value = '';
     });
+
+    const resetBtn = document.getElementById('reset-btn');
+
+    resetBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to clear the knowledge base? This will remove all uploaded documents from the current session.')) return;
+
+        try {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiUrl = isLocal ? 'http://127.0.0.1:8001/reset' : '/api/reset';
+
+            const response = await fetch(apiUrl, { method: 'POST' });
+            const data = await response.json();
+
+            if (response.ok) {
+                addMessage("Knowledge base has been reset. All previous documents removed.", 'bot');
+            } else {
+                addMessage(`Error: ${data.detail || 'Reset failed'}`, 'bot');
+            }
+        } catch (error) {
+            console.error(error);
+            addMessage("Error resetting knowledge base.", 'bot');
+        }
+    });
 });

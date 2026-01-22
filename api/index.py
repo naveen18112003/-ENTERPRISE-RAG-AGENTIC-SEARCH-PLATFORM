@@ -58,6 +58,11 @@ async def search(request: SearchRequest):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/reset")
+async def reset_knowledge_base():
+    rag.clear()
+    return {"message": "Knowledge base reset successfully."}
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     if not file.filename:
@@ -79,6 +84,10 @@ async def upload_file(file: UploadFile = File(...)):
         chunks = chunker.split_text(text)
         
         metadatas = [{"source": file.filename} for _ in chunks]
+        
+        # Clear old documents as per user requirement to use "only present time" PDF
+        rag.clear()
+        
         count, error = rag.add_documents(chunks, metadatas)
         
         if error:
