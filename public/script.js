@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const modeTabs = document.querySelectorAll('.mode-tab');
-    let currentMode = 'agentic';
+    let currentMode = 'rag';
 
     modeTabs.forEach(tab => {
         tab.addEventListener('click', () => {
