@@ -12,7 +12,7 @@ from src.chunker import Chunker
 from src.ingest import extract_text
 from backend.app.services.agentic_search import agentic_search
 
-app = FastAPI()
+app = FastAPI(root_path="/api" if os.getenv("VERCEL") else "")
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,8 +63,8 @@ async def upload_file(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file selected")
     
-    temp_path = os.path.join("data", file.filename)
-    os.makedirs("data", exist_ok=True)
+    temp_path = os.path.join("/tmp", file.filename)
+    os.makedirs("/tmp", exist_ok=True)
     
     try:
         with open(temp_path, "wb") as buffer:

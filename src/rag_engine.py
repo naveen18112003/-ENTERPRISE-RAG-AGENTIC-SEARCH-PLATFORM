@@ -19,22 +19,22 @@ class RagEngine:
         self.ids = []
         self.embeddings = []
 
-        github_token = os.getenv("GITHUB_TOKEN")
-        openai_key = os.getenv("OPENAI_API_KEY")
+        github_token = os.getenv("GITHUB_TOKEN", "").strip()
+        openai_key = os.getenv("OPENAI_API_KEY", "").strip()
         
-        if openai_key and "your_openai_api_key_here" not in openai_key:
-            print("Using Standard OpenAI (OPENAI_API_KEY)")
+        if openai_key and "your_openai_api_key_here" not in openai_key and not openai_key.startswith("GITHUB_TOKEN"):
+            print(f"DEBUG: Initializing OpenAI Client (Key starts with: {openai_key[:7]}...)")
             self.openai_client = OpenAI(
-                api_key=openai_key.strip()
+                api_key=openai_key
             )
         elif github_token:
-            print("Using GitHub Models (GITHUB_TOKEN)")
+            print(f"DEBUG: Initializing GitHub Models Client (Token starts with: {github_token[:10]}...)")
             self.openai_client = OpenAI(
                 base_url="https://models.inference.ai.azure.com",
-                api_key=github_token.strip()
+                api_key=github_token
             )
         else:
-            print("WARNING: Neither GITHUB_TOKEN nor OPENAI_API_KEY found. RAG functionality will fail.")
+            print("ERROR: Neither GITHUB_TOKEN nor OPENAI_API_KEY found in environment.")
             self.openai_client = None
         
         self.embedding_model = "text-embedding-3-small"
